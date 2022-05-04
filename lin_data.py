@@ -29,18 +29,23 @@ class LinData(HighLevelAnalyzer):
     High-level extension for the LIN protocol.
     '''
 
-    LIN_DATA_FIRST = 0
-    LIN_DATA_LAST  = 7
+    DECIMAL = "Decimal"
+    HEXADECIMAL = "Hexadecimal"
+    CSV = "CSV"
+    PLAIN = "Plain"
 
     data = {}
     start_time = None
     protected_id = None
-    number_display = ChoicesSetting(choices=("Decimal", "Hexadecimal"))
-    terminal_display = ChoicesSetting(choices=("CSV", "Plain"))
+    number_display = ChoicesSetting(choices=(DECIMAL, HEXADECIMAL))
+    terminal_display = ChoicesSetting(choices=(CSV, PLAIN))
 
     result_types = {
         "data": {
-            "format": "{{type}}: {{data.data}}"
+            "format": "DATA: {{data.data}}"
+        },
+        "checksum": {
+            "format": "CHK: {{data.checksum}}"
         },
         "header_pid": {
             "format": "PID: {{data.protected_id}}"
@@ -52,9 +57,9 @@ class LinData(HighLevelAnalyzer):
         Initialize LinData.
         '''
 
-        # If terminal display is CSV, display the header in the terminal
-        if self.terminal_display == "CSV":
-            print("datetime,protected_id,0,1,2,3,4,5,6,7")
+        # If terminal display is CSV, print the header in the terminal
+        if self.terminal_display == self.CSV:
+            print("datetime,protected_id,0,1,2,3,4,5,6,7,checksum")
 
     def decode(self, frame: AnalyzerFrame):
         '''
@@ -64,33 +69,52 @@ class LinData(HighLevelAnalyzer):
         '''
 
         if frame.type == "data":
-            if self.number_display == "Hexadecimal":
-                self.data[frame.data["index"]] = hex(frame.data["data"])
-            else:
-                self.data[frame.data["index"]] = frame.data["data"]
+            self.data[frame.data["index"]] = frame.data["data"]
 
-            if frame.data["index"] == self.LIN_DATA_FIRST:
+            if self.number_display == self.HEXADECIMAL:
+                self.data[frame.data["index"]] = f"0x{frame.data['data']:02X}"
+
+            if not self.start_time:
                 self.start_time = frame.start_time
-            if frame.data["index"] != self.LIN_DATA_LAST:
-                return
-
-            if self.terminal_display == "CSV":
-                print(self.start_time.__str__() + "," + str(self.protected_id) + "," +
-                    ",".join([str(frame_value) for frame_value in self.data.values()])
-                )
-            else:
-                print(self.start_time.__str__(), str(self.protected_id), self.data)
 
             return AnalyzerFrame(frame.type, self.start_time, frame.end_time, {
-	            "data": str(self.data),
-	            "protected_id": self.protected_id,
-	            "index": frame.data["index"]
+                "data": ", ".join([str(frame_value) for frame_value in self.data.values()]),
+                "protected_id": self.protected_id,
+                "index": frame.data["index"]
             })
 
-        if frame.type == "header_pid":
+        elif "checksum" in frame.type:
+            checksum = frame.data["checksum"]
+
+            if self.number_display == self.HEXADECIMAL:
+                checksum = f"0x{frame.data['checksum']:02X}"
+
+            if self.terminal_display == self.CSV:
+                csv_data = {0: "", 1: "", 2: "", 3: "", 4: "", 5: "", 6: "", 7: ""}
+                for i, _ in enumerate(csv_data):
+                    try:
+                        csv_data[i] = self.data[i]
+                    except KeyError:
+                        continue
+
+                print(self.start_time.__str__() + "," + str(self.protected_id) + "," +
+                      ",".join([str(frame_value) for frame_value in csv_data.values()]) +
+                      "," + str(checksum))
+            else:
+                print(self.start_time.__str__(), str(self.protected_id), self.data, checksum)
+
+            return AnalyzerFrame("checksum", frame.start_time, frame.end_time, {
+                "checksum": checksum
+            })
+
+        elif frame.type == "header_pid":
             self.data = {}
+            self.start_time = None
             self.protected_id = frame.data["protected_id"]
 
+            if self.number_display == self.HEXADECIMAL:
+                self.protected_id = f"0x{frame.data['protected_id']:02X}"
+
             return AnalyzerFrame(frame.type, frame.start_time, frame.end_time, {
-	            "protected_id": self.protected_id
+                "protected_id": self.protected_id
             })
