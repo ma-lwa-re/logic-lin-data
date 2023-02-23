@@ -39,6 +39,7 @@ class LinData(HighLevelAnalyzer):
     protected_id = None
     number_display = ChoicesSetting(choices=(DECIMAL, HEXADECIMAL))
     terminal_display = ChoicesSetting(choices=(CSV, PLAIN))
+    data_length = ChoicesSetting(choices=("8", "7", "6", "5", "4", "3", "2", "1"))
 
     result_types = {
         "data": {
@@ -77,6 +78,9 @@ class LinData(HighLevelAnalyzer):
             if not self.start_time:
                 self.start_time = frame.start_time
 
+            if (frame.data["index"] + 1) != int(self.data_length):
+                return
+
             return AnalyzerFrame(frame.type, self.start_time, frame.end_time, {
                 "data": ", ".join([str(frame_value) for frame_value in self.data.values()]),
                 "protected_id": self.protected_id,
@@ -97,11 +101,11 @@ class LinData(HighLevelAnalyzer):
                     except KeyError:
                         continue
 
-                print(self.start_time.__str__() + "," + str(self.protected_id) + "," +
+                print(str(self.start_time) + "," + str(self.protected_id) + "," +
                       ",".join([str(frame_value) for frame_value in csv_data.values()]) +
                       "," + str(checksum))
             else:
-                print(self.start_time.__str__(), str(self.protected_id), self.data, checksum)
+                print(str(self.start_time), str(self.protected_id), self.data, checksum)
 
             return AnalyzerFrame("checksum", frame.start_time, frame.end_time, {
                 "checksum": checksum

@@ -12,7 +12,7 @@ Click on the right Analyzer panel, then ***+*** ***LIN Data***
 
 ![settings](images/settings.png)
 
-Select **LIN** as _Input Analyzer_ and the terminal and numeric display as preferred.
+Select **LIN** as _Input Analyzer_, terminal and numeric display as preferred. As the LIN specification allows variable lengths for data transfer, you can choose the desired size of the excahnged data. If not sure, keep _8_ as default.
 
 ## Output
 
@@ -24,4 +24,4 @@ The plugin output can be visualized in the decoder view, table, and terminal vie
 
 Issues and feature requests should be raised on GitHub using
 
-- https://github.com/ma-lwa-re/logic-lin-data/issues/new
+- [`https://github.com/ma-lwa-re/logic-lin-data/issues/new`](https://github.com/ma-lwa-re/logic-lin-data/issues/new)

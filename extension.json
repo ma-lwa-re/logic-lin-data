@@ -2,7 +2,7 @@
   "name": "LIN Data",
   "apiVersion": "1.0.0",
   "author": "ma.lwa.re",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "LIN Data is a high-level extension for the LIN protocol.",
   "extensions": {
     "LIN Data": {
